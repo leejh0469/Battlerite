@@ -3,10 +3,53 @@ using Fusion.Sockets;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class BasicSpawner : MonoBehaviour, INetworkRunnerCallbacks
 {
     public NetworkObject PlayerPrefab;
+
+    private NetworkRunner _runner;
+
+    [SerializeField] private Button gameStart_Host_Btn;
+    [SerializeField] private Button gameStart_Client_Btn;
+
+    private void Awake()
+    {
+        Initialize();
+    }
+
+    public void Initialize()
+    {
+        gameStart_Host_Btn.onClick.AddListener(() => StartGame(GameMode.Host));
+        gameStart_Client_Btn.onClick.AddListener(() => StartGame(GameMode.Client));
+    }
+
+    public async void StartGame(GameMode mode)
+    {
+        if (_runner != null)
+            return;
+
+        _runner = gameObject.AddComponent<NetworkRunner>();
+        _runner.ProvideInput = true;
+
+        var scene = SceneRef.FromIndex(SceneManager.GetActiveScene().buildIndex);
+        var sceneInfo = new NetworkSceneInfo();
+        if (scene.IsValid)
+        {
+            sceneInfo.AddSceneRef(scene, LoadSceneMode.Additive);
+        }
+
+        await _runner.StartGame(new StartGameArgs()
+        {
+            GameMode = mode,
+            SessionName = "TestRoom",
+            Scene = scene,
+            SceneManager = gameObject.AddComponent<NetworkSceneManagerDefault>()
+        });
+    }
 
     public void OnConnectedToServer(NetworkRunner runner)
     {}
@@ -36,7 +79,17 @@ public class BasicSpawner : MonoBehaviour, INetworkRunnerCallbacks
 
         var data = new NetworkInputData();
 
-        data.direction = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical"));
+        Vector2 moveInput = Vector2.zero;
+
+        if (Keyboard.current != null)
+        {
+            if (Keyboard.current.wKey.isPressed) moveInput.y += 1f;
+            if (Keyboard.current.sKey.isPressed) moveInput.y -= 1f;
+            if (Keyboard.current.aKey.isPressed) moveInput.x -= 1f;
+            if (Keyboard.current.dKey.isPressed) moveInput.x += 1f;
+        }
+
+        data.direction = new Vector3(moveInput.x, 0, moveInput.y);
 
         data.mousePosition = GetMouseWorldPosition();
 
@@ -99,17 +152,17 @@ public class BasicSpawner : MonoBehaviour, INetworkRunnerCallbacks
 
     private Vector3 GetMouseWorldPosition()
     {
-        // 1. 카메라에서 마우스 위치를 통과하는 광선(Ray)을 생성합니다.
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        Vector2 mousePos = Mouse.current.position.ReadValue();
 
-        // 2. 광선이 무엇인가(바닥 등)에 부딪혔는지 확인합니다.
+        // 2. 카메라에서 해당 좌표를 통과하는 광선 생성
+        Ray ray = Camera.main.ScreenPointToRay(mousePos);
+
+        // 3. 광선 충돌 검사 (바닥 레이어만 감지하도록 레이어 마스크를 쓰는 것이 좋습니다)
         if (Physics.Raycast(ray, out RaycastHit hit))
         {
-            // 3. 부딪힌 지점의 3D 좌표를 반환합니다.
             return hit.point;
         }
 
-        // 부딪힌 곳이 없다면 기본값 반환
         return Vector3.zero;
     }
 }
