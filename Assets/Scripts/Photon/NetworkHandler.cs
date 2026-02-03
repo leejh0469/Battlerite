@@ -7,6 +7,8 @@ public class NetworkHandler : MonoSingleton<NetworkHandler>
 {
     private NetworkRunner _runner;
 
+    public NetworkRunner Runner { get { return _runner; } }
+
     protected override void Awake()
     {
         base.Awake();
