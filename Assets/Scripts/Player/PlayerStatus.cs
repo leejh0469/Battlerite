@@ -17,6 +17,8 @@ public class PlayerStatus : NetworkBehaviour
     {
         var lobbyUI = UI_Manager.Instance.GetPanel<UI_Lobby>();
         if (lobbyUI != null) lobbyUI.UpdatePlayerList();
+
+        Runner.MakeDontDestroyOnLoad(gameObject);
     }
 
     public void SetPlayerInfo(string name)
