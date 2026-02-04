@@ -2,6 +2,7 @@ using CoreSystem.Common;
 using Fusion;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class NetworkHandler : MonoSingleton<NetworkHandler>
 {
@@ -49,6 +50,14 @@ public class NetworkHandler : MonoSingleton<NetworkHandler>
         else
         {
             Debug.LogError($"네트워크 시작 실패: {result.ShutdownReason}");
+        }
+    }
+
+    public void ChangeScene(int sceneIndex)
+    {
+        if (Runner.IsServer)
+        {
+            Runner.LoadScene(SceneRef.FromIndex(sceneIndex), LoadSceneMode.Single);
         }
     }
 }

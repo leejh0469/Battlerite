@@ -6,6 +6,7 @@ public class UI_Lobby : MonoBehaviour
     [SerializeField] private Transform _container;
     [SerializeField] private GameObject _playerItem;
     [SerializeField] private Button _readyBtn;
+    [SerializeField] private Button _startBtn;
 
     public void UpdatePlayerList()
     {
@@ -18,6 +19,25 @@ public class UI_Lobby : MonoBehaviour
             var item = Instantiate(_playerItem, _container).GetComponent<UI_LobbyPlayerItem>();
             item.SetPlayerInfo(p.Nickname.ToString(), p.IsReady);
         }
+
+        CheckStartCondition(players);
+    }
+
+    private void CheckStartCondition(PlayerStatus[] players)
+    {
+        _startBtn.gameObject.SetActive(NetworkHandler.Instance.Runner.IsServer);
+
+        bool allReady = true;
+        foreach( PlayerStatus p in players)
+        {
+            if (!p.IsReady)
+            {
+                allReady = false; 
+                break;
+            }
+        }
+
+        _startBtn.interactable = allReady && players.Length >= 2;
     }
 
     public void OnReadyBtnPressed()
@@ -28,6 +48,6 @@ public class UI_Lobby : MonoBehaviour
 
     public void OnStartBtnPressed()
     {
-
+        NetworkHandler.Instance.ChangeScene(2);
     }
 }
